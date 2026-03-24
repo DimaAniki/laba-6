@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Корзина — BookNest</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<header>
+  <h1>Корзина</h1>
+  <nav>
+    <a href="index.html">← Назад</a>
+  </nav>
+</header>
+
+<section class="section">
+  <div id="cart-items" class="grid"></div>
+  <p id="empty-cart"></p>
+  <div class="cart-actions">
+    <button onclick="clearCart()">Очистить корзину</button>
+    <a href="checkout.html" class="btn-primary">Оформить заказ</a>
+  </div>
+</section>
+
+<script src="js/cart.js"></script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}BookNest — Главная{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h2>Найди свою следующую любимую книгу</h2>
+    <p>Тысячи книг · Все жанры · Уютное чтение</p>
+</section>
+
+<section class="section">
+    <h2>Популярные книги</h2>
+    
+    <div class="filters">
+        <input type="text" id="searchInput" placeholder="Поиск по названию или автору...">
+        <select id="genreFilter" class="genre-select">
+            <option value="all">Все жанры</option>
+            <option value="classic">Классика</option>
+            <option value="fantasy">Фэнтези</option>
+            <option value="dystopia">Антиутопия</option>
+        </select>
+    </div>
+
+    <div id="book-list" class="grid">
+        {% for product in popular_products %}
+        <div class="card" data-genre="{{ product.category.slug }}">
+            <!-- Изображение: используем статичные файлы из static/images/ -->
+            {% if product.slug == '1984' %}
+                <img src="{% static 'images/1984.jpg' %}" alt="{{ product.name }}" class="book-cover">
+            {% elif product.slug == 'war-and-peace' %}
+                <img src="{% static 'images/war-and-peace.jpg' %}" alt="{{ product.name }}" class="book-cover">
+            {% elif product.slug == 'harry-potter' %}
+                <img src="{% static 'images/HarryPoter.jpg' %}" alt="{{ product.name }}" class="book-cover">
+            {% elif product.slug == 'master-margarita' %}
+                <img src="{% static 'images/mastermargar.jpg' %}" alt="{{ product.name }}" class="book-cover">
+            {% elif product.slug == 'wow-artas' %}
+                <img src="{% static 'images/artas.jpg' %}" alt="{{ product.name }}" class="book-cover">
+            {% elif product.slug == 'we-zamyatin' %}
+                <img src="{% static 'images/me.jpg' %}" alt="{{ product.name }}" class="book-cover">
+            {% else %}
+                <img src="{% static 'images/1984.jpg' %}" alt="{{ product.name }}" class="book-cover">
+            {% endif %}
+            
+            <h4>{{ product.name }}</h4>
+            <p>{{ product.description|truncatewords:10 }}</p>
+            <p><strong>{{ product.price }} ₽</strong></p>
+            <button class="add-to-cart" data-product-id="{{ product.id }}">В корзину</button>
+        </div>
+        {% empty %}
+        <p style="grid-column: 1/-1; text-align: center; color: #777;">Книги пока не добавлены</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Фильтрация и поиск (клиентская часть)
+function renderBooks() {
+    const searchTerm = document.getElementById('searchInput')?.value.toLowerCase().trim() || '';
+    const selectedGenre = document.getElementById('genreFilter')?.value || 'all';
+    const cards = document.querySelectorAll('#book-list .card');
+    
+    cards.forEach(card => {
+        const title = card.querySelector('h4')?.textContent.toLowerCase() || '';
+        const genre = card.dataset.genre || '';
+        
+        const matchesSearch = title.includes(searchTerm);
+        const matchesGenre = selectedGenre === 'all' || genre === selectedGenre;
+        
+        if (matchesSearch && matchesGenre) {
+            card.style.display = 'flex';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+// Добавление в корзину через AJAX
+function addToCart(productId) {
+    // Получаем токен из глобальной переменной или из формы
+    const csrftoken = window.csrfToken || 
+                     document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                     getCookie('csrftoken');
+    
+    if (!csrftoken) {
+        console.error('CSRF токен не найден!');
+        alert('Ошибка безопасности. Перезагрузите страницу и попробуйте снова.');
+        return;
+    }
+    
+    fetch('{% url "cart:add_to_cart" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            product_id: productId,
+            quantity: 1
+        })
+    })
+    .then(async response => {
+        // Если 403 — пробуем перезапросить токен
+        if (response.status === 403) {
+            console.warn('CSRF ошибка, пробуем обновить токен...');
+            // Принудительно читаем куку ещё раз
+            const newToken = getCookie('csrftoken');
+            if (newToken) {
+                // Повторяем запрос с новым токеном
+                return fetch('{% url "cart:add_to_cart" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': newToken
+                    },
+                    body: JSON.stringify({
+                        product_id: productId,
+                        quantity: 1
+                    })
+                });
+            }
+            throw new Error('CSRF проверка не пройдена. Перезагрузите страницу.');
+        }
+        return response;
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const cartCount = document.getElementById('cart-count');
+            if (cartCount) {
+                cartCount.textContent = data.cart_total;
+            }
+            alert('✓ ' + data.message);
+        } else {
+            alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
+        }
+    })
+    .catch(error => {
+        console.error('AJAX Error:', error);
+        alert('Произошла ошибка при добавлении в корзину. Попробуйте позже.');
+    });
+}
+
+// Вспомогательная функция для чтения куки
+function getCookie(name) {
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                return decodeURIComponent(cookie.substring(name.length + 1));
+            }
+        }
+    }
+    return null;
+}
+
+// Инициализация после загрузки DOM
+document.addEventListener('DOMContentLoaded', function() {
+    // Фильтры
+    const searchInput = document.getElementById('searchInput');
+    const genreFilter = document.getElementById('genreFilter');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', renderBooks);
+    }
+    if (genreFilter) {
+        genreFilter.addEventListener('change', renderBooks);
+    }
+    
+    // Кнопки "В корзину" — используем делегирование событий для надёжности
+    document.getElementById('book-list')?.addEventListener('click', function(e) {
+        if (e.target.classList.contains('add-to-cart')) {
+            const productId = e.target.dataset.productId;
+            addToCart(productId);
+        }
+    });
+    
+    // Также поддерживаем прямые обработчики (для совместимости)
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const productId = this.dataset.productId;
+            addToCart(productId);
+        });
+    });
+});
+</script>
+{% endblock %}

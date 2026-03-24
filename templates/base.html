@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BookNest{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <!-- 🔐 Скрытая форма для инициализации CSRF токена -->
+    <form id="csrf-form" style="display: none;" method="post">
+        {% csrf_token %}
+    </form>
+
+    <header>
+        <h1>BookNest</h1>
+        <nav>
+            <a href="{% url 'main:home' %}">Каталог</a>
+            <a href="{% url 'products:catalog' %}">Все книги</a>
+            <a href="{% url 'cart:cart' %}">
+                Корзина (<span id="cart-count">{{ cart.total_items|default:0 }}</span>)
+            </a>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; 2026 BookNest — интернет-магазин книг</p>
+    </footer>
+
+    <!-- 🔐 Скрипт для гарантированного получения CSRF токена -->
+    <script>
+        // Глобальная переменная для CSRF токена
+        window.csrfToken = null;
+        
+        function getCsrfToken() {
+            // Сначала пробуем взять из формы
+            const form = document.getElementById('csrf-form');
+            if (form && form.querySelector('[name=csrfmiddlewaretoken]')) {
+                return form.querySelector('[name=csrfmiddlewaretoken]').value;
+            }
+            
+            // Потом из куки
+            const name = 'csrftoken';
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Инициализируем токен при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            window.csrfToken = getCsrfToken();
+            console.log('CSRF Token loaded:', window.csrfToken ? 'OK' : 'NOT FOUND');
+        });
+    </script>
+
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

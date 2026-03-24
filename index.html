@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>BookNest — интернет-магазин книг</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<header>
+  <h1>BookNest</h1>
+  <nav>
+    <a href="#">Каталог</a>
+    <a href="#">Жанры</a>
+    <a href="cart.html">Корзина (<span id="cart-count">0</span>)</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <h2>Найди свою следующую любимую книгу</h2>
+  <p>Тысячи книг · Все жанры · Уютное чтение</p>
+</section>
+
+<section class="section">
+  <h3>Каталог книг</h3>
+
+  <div class="filters">
+    <input type="text" id="searchInput" placeholder="Поиск по названию или автору...">
+    <select id="genreFilter" class="genre-select">
+      <option value="all">Все жанры</option>
+      <option value="classic">Классика</option>
+      <option value="fantasy">Фэнтези</option>
+      <option value="dystopia">Антиутопия</option>
+    </select>
+  </div>
+
+  <div class="grid" id="book-list"></div>
+</section>
+
+<script src="js/main.js"></script>
+</body>
+</html>

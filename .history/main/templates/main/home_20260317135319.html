@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}BookNest — Главная{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h2>Найди свою следующую любимую книгу</h2>
+    <p>Тысячи книг · Все жанры · Уютное чтение</p>
+</section>
+
+<section class="section">
+    <h2>Популярные книги</h2>
+    
+    <div class="filters">
+        <input type="text" id="searchInput" placeholder="Поиск по названию или автору...">
+        <select id="genreFilter" class="genre-select">
+            <option value="all">Все жанры</option>
+            <option value="classic">Классика</option>
+            <option value="fantasy">Фэнтези</option>
+            <option value="dystopia">Антиутопия</option>
+        </select>
+    </div>
+
+    <div id="book-list" class="grid">
+        {% for product in popular_products %}
+        <div class="card" data-genre="{{ product.category.slug }}">
+            {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="book-cover">
+            {% else %}
+                <img src="{% static 'images/default-book.jpg' %}" alt="{{ product.name }}" class="book-cover">
+            {% endif %}
+            <h4>{{ product.name }}</h4>
+            <p>{{ product.description|truncatewords:10 }}</p>
+            <p><strong>{{ product.price }} ₽</strong></p>
+            <button class="add-to-cart" data-product-id="{{ product.id }}">В корзину</button>
+        </div>
+        {% empty %}
+        <p style="grid-column: 1/-1; text-align: center; color: #777;">Книги пока не добавлены</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// CSRF токен для AJAX запросов
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Добавление в корзину через AJAX
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+        button.addEventListener('click', function() {
+            const productId = this.dataset.productId;
+            
+            fetch('{% url "cart:add_to_cart" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    quantity: 1
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('cart-count').textContent = data.cart_total;
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+});
+</script>
+{% endblock %}
